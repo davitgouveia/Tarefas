@@ -6,6 +6,7 @@ CREATE SCHEMA vw;
 CREATE TABLE tb.usuario (
 	idUser INT PRIMARY KEY,
 	nomeUser VARCHAR(100),
+	loginUser VARCHAR(100),
 	senhaUser VARCHAR(100)
 );
 
@@ -15,15 +16,23 @@ CREATE TABLE tb.tarefa (
 	tituloTarefa VARCHAR (100),
 	descTarefa VARCHAR (100),
 	statusTarefa VARCHAR (30),
-	dataCriTarefa DATE,
-	userTarefa VARCHAR (100)
-	
---Como atribuir mais de um usuario à tarefa? Pensei em, com a ajuda do app, ao selecionar mais de um usuário, uma nova tarefa seria criada
---para cada usuário selecionado, (automaticamente preenchendo os mesmos valores e o nome do usuário em "userTarefa"). Porem, desse jeito
---não haveria a questão de so poder apagar a tarefa se todos concordarem.
+	dataCriTarefa DATE
+);
+
+CREATE TABLE tb.userTarefa (
+	idTarefa INT,
+	userTarefa INT,
+	apagarTarefa VARCHAR(3)
+--Criar função que muda o statusTarefa para EXCLUIDA se todos as linhas --apagarTarefa-- da tabela com idTarefa = X forem iguais a 'SIM'
 );
 
 ALTER TABLE tb.tarefa
 ADD CONSTRAINT fk_UserTarefa FOREIGN KEY (userTarefa) REFERENCES tb.usuario (idUser);
-ADD CONSTRAINT prioriTarefa CHECK ((prioriTarefa = 'BAIXA') OR (prioriTarefa = 'ALTA'));
+ADD CONSTRAINT prioriTarefa CHECK ((prioriTarefa = 'BAIXA') OR (prioriTarefa = 'NORMAL') OR (prioriTarefa = 'ALTA'));
 ADD CONSTRAINT statusTarefa CHECK ((statusTarefa = 'ABERTA') OR (statusTarefa = 'EM ANDAMENTO') OR (statusTarefa = 'CONCLUIDA') OR (statusTarefa = 'EXCLUIDA'));
+
+ALTER TABLE tb.userTarefa (
+ADD CONSTRAINT fk_idTarefa FOREIGN KEY (idTarefa) REFERENCES tb.tarefa (idTarefa);
+ADD CONSTRAINT fk_UserTarefa FOREIGN KEY (userTarefa) REFERENCES tb.usuario (idUser);
+ADD CONSTRAINT apagarTarefa CHECK ((apagarTarefa = 'SIM' OR (apagarTarefa = 'NAO'));
+);
