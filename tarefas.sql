@@ -5,7 +5,8 @@ CREATE SCHEMA vw;
 
 CREATE TABLE tb.usuario (
 	idUser INT PRIMARY KEY,
-	nomeUser VARCHAR(100)
+	nomeUser VARCHAR(100),
+	senhaUser VARCHAR(100)
 );
 
 CREATE TABLE tb.tarefa (
