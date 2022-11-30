@@ -2,32 +2,32 @@ CREATE SCHEMA tb;
 CREATE SCHEMA vw;
 
 CREATE TABLE tb.usuario (
-	idUser INT PRIMARY KEY,
+	idUser SERIAL PRIMARY KEY,
 	nomeUser VARCHAR(100),
-	emailUser VARCHAR(100),
+	emailUser VARCHAR(100) PRIMARY KEY,
 	idCasa INT DEFAULT(NULL)
 );
 
 CREATE TABLE tb.tarefa (
-	idTarefa INT PRIMARY KEY,
+	idTarefa SERIAL PRIMARY KEY,
 	prioriTarefa VARCHAR (100),
 	tituloTarefa VARCHAR (100),
 	descTarefa VARCHAR (100),
 	statusTarefa VARCHAR (30),
-	dataCriTarefa DATETIME
+	dataCriTarefa TIMESTAMP
 );
 
 CREATE TABLE tb.casa (
-	idCasa INT PRIMARY KEY,
+	idCasa SERIAL PRIMARY KEY,
 	nomeCasa VARCHAR(100),
-	descCasa VARCHAR(100),
+	descCasa VARCHAR(100)
 	
 );
 
 CREATE TABLE tb.userCasa (
 	idCasaCon INT,
 	userCasa INT,
-	statusUsuarioConCasa INT(1) --(1) ATIVO (0) DESATIVO
+	statusUsuarioConCasa INT --(1) ATIVO (0) DESATIVO
 );
 
 CREATE TABLE tb.conviteCasa (
@@ -35,12 +35,12 @@ CREATE TABLE tb.conviteCasa (
 	userConvite INT,
 	emailConvidado VARCHAR(100),
 	confirmaConvite VARCHAR (3) DEFAULT ('ABR')
-)
+);
 
 CREATE TABLE tb.userTarefa (
 	idTarefaCon INT,
 	userTarefa INT,
-	concluirTarefa VARCHAR(3) DEFAULT('NAO')
+	concluirTarefa VARCHAR(3) DEFAULT('NAO'),
 	apagarTarefa VARCHAR(3) DEFAULT('NAO')
 
 );
