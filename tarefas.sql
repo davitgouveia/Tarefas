@@ -4,7 +4,7 @@ CREATE SCHEMA vw;
 CREATE TABLE tb.usuario (
 	idUser SERIAL PRIMARY KEY,
 	nomeUser VARCHAR(100),
-	emailUser VARCHAR(100) PRIMARY KEY,
+	emailUser VARCHAR(100) UNIQUE,
 	idCasa INT DEFAULT(NULL)
 );
 
@@ -15,6 +15,7 @@ CREATE TABLE tb.tarefa (
 	descTarefa VARCHAR (100),
 	statusTarefa VARCHAR (30),
 	dataCriTarefa TIMESTAMP
+	casaTarefa INT
 );
 
 CREATE TABLE tb.casa (
@@ -27,7 +28,8 @@ CREATE TABLE tb.casa (
 CREATE TABLE tb.userCasa (
 	idCasaCon INT,
 	userCasa INT,
-	statusUsuarioConCasa INT --(1) ATIVO (0) DESATIVO
+	adminCasa BOOLEAN DEFAULT('FALSE'),
+	statusUsuarioConCasa BOOLEAN DEFAULT('TRUE') --(1) ATIVO (0) DESATIVO
 );
 
 CREATE TABLE tb.conviteCasa (
@@ -63,19 +65,22 @@ END;
 $$ LANGUAGE plpgsql;
 
 --Funcão de criar casa
-CREATE FUNCTION criar_casa() RETURNS void AS $$
+CREATE OR REPLACE FUNCTION criar_casa(p_nomeCasa VARCHAR(100), p_descCasa VARCHAR(100), p_userID INT) RETURNS void AS $$
+DECLARE p_idCasa INT;
 BEGIN
 	INSERT INTO tb.casa (nomeCasa, descCasa)
-		VALUES ('', '');
-	SELECT add_user_casa();
+		VALUES (p_nomeCasa, p_descCasa)
+		RETURNING idCasa INTO p_idCasa;
+	PERFORM add_user_casa(p_idCasa, p_userID, 'TRUE');
 END;
 $$ LANGUAGE plpgsql;
 
 --Função de adicionar usuario a casa
-CREATE FUNCTION add_user_casa() RETURNS void AS $$
+CREATE OR REPLACE FUNCTION add_user_casa(p_idCasaCon INT, p_userCasa INT, p_adminCasa BOOLEAN ) RETURNS void AS $$
 BEGIN
-	INSERT INTO tb.userCasa (idCasaCon, userCasa, statusUsuarioConCasa)
-		VALUES ('', '', '1');
+	INSERT INTO tb.userCasa (idCasaCon, userCasa, adminCasa)
+		VALUES (p_idCasaCon, p_userCasa, p_adminCasa);
+	UPDATE tb.usuario SET idCasa = p_idCasaCon WHERE idUser = p_userCasa;
 END;
 $$ LANGUAGE plpgsql;
 
