@@ -1,0 +1,8 @@
+--Populando o banco de dados para teste
+
+INSERT INTO tb.usuario( nomeuser, emailuser)
+	VALUES 
+	( 'Davi', 'davi@gmail.com'),
+	( 'Mateus', 'mateus@gmail.com'),
+	( 'Pedro', 'pedro@gmail.com');
+
