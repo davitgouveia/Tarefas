@@ -4,8 +4,7 @@ CREATE SCHEMA vw;
 CREATE TABLE tb.usuario (
 	idUser SERIAL PRIMARY KEY,
 	nomeUser VARCHAR(100),
-	emailUser VARCHAR(100) UNIQUE,
-	idCasa INT DEFAULT(NULL)
+	emailUser VARCHAR(100) UNIQUE
 );
 
 CREATE TABLE tb.tarefa (
@@ -13,9 +12,10 @@ CREATE TABLE tb.tarefa (
 	prioriTarefa VARCHAR (100),
 	tituloTarefa VARCHAR (100),
 	descTarefa VARCHAR (100),
+	tipoTarefa VARCHAR (100),
 	statusTarefa VARCHAR (30),
 	dataCriTarefa TIMESTAMP
-	casaTarefa INT
+	idCasaTarefa INT
 );
 
 CREATE TABLE tb.casa (
@@ -47,22 +47,34 @@ CREATE TABLE tb.userTarefa (
 
 );
 
---Função de mudar para concluida se todos concordarem:
-CREATE FUNCTION check_conclusao() RETURNS void AS $$
+--Workflow, caso a tarefa seja prioridade alta, o comando abaixo so rodara se todos concordarem. (revisar a questao de concluir caso nao seja ALTA)
+--Função de conclusao da tarefa
+CREATE OR REPLACE FUNCTION tb.check_conclusao_prioridade(p_idTarefa INT) RETURNS void AS $$
+BEGIN
+	IF EXISTS (SELECT prioriTarefa FROM tb.tarefa WHERE 'ALTA' IN (prioriTarefa) AND idTarefa = p_idTarefa) THEN
+		PERFORM tb.check_conclusao(p_idTarefa);
+	ELSE
+		UPDATE tb.tarefa SET statusTarefa = 'CONCLUIDO' WHERE idTarefa = p_idTarefa;
+	END IF;
+END; 
+$$ LANGUAGE plpgsql;
 
+--Função de mudar para concluida se todos concordarem:
+CREATE FUNCTION tb.check_conclusao(p_idTarefa INT) RETURNS void AS $$
 DECLARE resultado VARCHAR(1) := (
 SELECT CASE
          WHEN NOT EXISTS(SELECT *
                          FROM   tb.userTarefa
-                         WHERE  concluirTarefa <> 'SIM' AND idTarefa = '3') THEN 'Y'
+                         WHERE  concluirTarefa <> 'SIM' AND idTarefaCon = p_idTarefa) THEN 'Y'
          ELSE 'N'
        END);
 BEGIN	   
 IF resultado = 'Y' THEN 
-	UPDATE tb.tarefa SET statusTarefa = 'CONCLUIDO' WHERE idTarefa = '3';
+	UPDATE tb.tarefa SET statusTarefa = 'CONCLUIDO' WHERE idTarefa = p_idTarefa;
 END IF;
-END;
+END; 
 $$ LANGUAGE plpgsql;
+
 
 --Funcão de criar casa
 CREATE OR REPLACE FUNCTION criar_casa(p_nomeCasa VARCHAR(100), p_descCasa VARCHAR(100), p_userID INT) RETURNS void AS $$
@@ -72,7 +84,7 @@ BEGIN
 		VALUES (p_nomeCasa, p_descCasa)
 		RETURNING idCasa INTO p_idCasa;
 	PERFORM add_user_casa(p_idCasa, p_userID, 'TRUE');
-END;
+END; 
 $$ LANGUAGE plpgsql;
 
 --Função de adicionar usuario a casa
@@ -80,7 +92,6 @@ CREATE OR REPLACE FUNCTION add_user_casa(p_idCasaCon INT, p_userCasa INT, p_admi
 BEGIN
 	INSERT INTO tb.userCasa (idCasaCon, userCasa, adminCasa)
 		VALUES (p_idCasaCon, p_userCasa, p_adminCasa);
-	UPDATE tb.usuario SET idCasa = p_idCasaCon WHERE idUser = p_userCasa;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -91,6 +102,13 @@ BEGIN
 		VALUES ('', '', '');
 END;
 $$ LANGUAGE plpgsql;
+
+
+--
+
+--------- FAZER FUNCAO DE ADICIONAR USUARIO A TAREFA
+
+--
 
 --Adicionando Constrains
 ALTER TABLE tb.tarefa
@@ -111,6 +129,9 @@ ADD CONSTRAINT fk_UserCasa FOREIGN KEY (userCasa) REFERENCES tb.usuario (idUser)
 --Chave estrangeira IdConCasa e idCasa
 ALTER TABLE tb.userCasa
 ADD CONSTRAINT fk_idCasa FOREIGN KEY (idCasaCon) REFERENCES tb.casa (idCasa);
+--Chave estrangeira Tarefa com idCasa
+ALTER TABLE tb.tarefa
+ADD CONSTRAINT fk_idCasaTarefa FOREIGN KEY (idCasaTarefa) REFERENCES tb.casa(idCasa);
 
 
 --Confirmação do convite
@@ -128,20 +149,30 @@ ADD CONSTRAINT fk_CasaConvite FOREIGN KEY (idCasaConvite) REFERENCES tb.casa(idC
 
 
 --Comando de busca por usuario
-SELECT * FROM tb.tarefa AS tr INNER JOIN tb.userTarefa AS utr ON tr.idTarefa = utr.idTarefa WHERE userTarefa = '1';
+SELECT * FROM tb.tarefa AS tr INNER JOIN tb.userTarefa AS utr ON tr.idTarefa = utr.idTarefa WHERE userTarefa = 'idUsuarioCadastrado';
 
 --MENU
 --Tarefas atrasadas
-SELECT * FROM tb.tarefa AS tr INNER JOIN tb.userTarefa AS utr ON tr.idTarefa = utr.idTarefa WHERE userTarefa = '1' AND tr.dataCriTarefa < CURRENT_TIMESTAMP;
+SELECT * FROM tb.tarefa AS tr INNER JOIN tb.userTarefa AS utr ON tr.idTarefa = utr.idTarefa WHERE userTarefa = 'idUsuarioCadastrado' AND tr.dataCriTarefa < CURRENT_TIMESTAMP;
 
 --Tarefas de hoje
-SELECT * FROM tb.tarefa AS tr INNER JOIN tb.userTarefa AS utr ON tr.idTarefa = utr.idTarefa WHERE userTarefa = '1' AND tr.dataCriTarefa::DATE = CURRENT_DATE
+SELECT * FROM tb.tarefa AS tr INNER JOIN tb.userTarefa AS utr ON tr.idTarefa = utr.idTarefa WHERE userTarefa = 'idUsuarioCadastrado' AND tr.dataCriTarefa::DATE = CURRENT_DATE
 
 --Comando para concluir tarefa
 UPDATE tb.tarefa SET statusTarefa = 'CONCLUIDO' WHERE idTarefa = '' AND 
 
 --Comando do usuario concluir tarefa compartilhada
-UPDATE tb.usertarefa SET apagarTarefa = 'SIM' WHERE idTarefa = '' AND userTarefa = '';
+UPDATE tb.usertarefa SET apagarTarefa = 'SIM' WHERE idTarefa = 'idTarefa' AND userTarefa = 'idUsuarioCadastrado';
+
+--Workflow: usuário cria nova tarefa, escolhe a qual casa pertence a tarefa.
+--Casas do usuário
+SELECT nomeCasa FROM tb.casa AS casa INNER JOIN tb.userCasa AS ucasa ON casa.idCasa = ucasa.idCasaCon WHERE ucasa.userCasa = 'idUsuarioCadastrado';
+
+--Sistema limita a as pessoas da casa escolhida
+--Usuarios da mesma casa na tarefa
+SELECT nomeUser FROM tb.usuario AS us INNER JOIN tb.userCasa AS ucasa ON ucasa.userCasa = us.idUser WHERE ucasa.idCasaCon = 'idDaCasaDaTarefa';
+
+
 
 --NOTAS DATETIME - format: YYYY-MM-DD HH:MI:SS
 --funcao CURRENT DATE tem q utilizar de acordo com a plataforma.
