@@ -15,7 +15,7 @@ CREATE TABLE tb.tarefa (
 	tipoTarefa VARCHAR (100),
 	statusTarefa VARCHAR (30),
 	dataTarefa TIMESTAMP,
-	idCasaTarefa INT --Ver com o mateus se deve ser NULL
+	idCasaTarefa INT 
 );
 
 CREATE TABLE tb.casa (
